@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blessed Ateliê - Sinais Vitais</title>
+    <title>Blessed Ateliê - Sinais Vitais & Comparativo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- PapaParse para ler o CSV do Google Sheets automaticamente -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -15,22 +14,15 @@
         
         .card { 
             background: #ffffff; border: 1px solid #e2e8f0; border-radius: 1.25rem; 
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); 
-            padding: 1.25rem 1.5rem; transition: transform 0.3s ease, box-shadow 0.3s ease; 
-            display: flex; flex-direction: column; justify-content: center;
-            container-type: inline-size;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); padding: 1.25rem 1.5rem; 
+            transition: transform 0.3s ease; display: flex; flex-direction: column;
         }
-        .card:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); transform: translateY(-2px); }
         
-        .kpi-title { font-size: 0.875rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+        .kpi-title { font-size: 0.875rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; display: flex; justify-content: space-between; align-items: center; }
         
         .kpi-value { 
-            font-weight: 800; 
-            margin-top: 0.25rem; 
-            letter-spacing: -0.04em; 
-            line-height: 1.2; 
-            white-space: nowrap; 
-            font-size: clamp(1.25rem, 9.5cqw, 2.5rem); 
+            font-weight: 800; margin-top: 0.5rem; letter-spacing: -0.04em; 
+            line-height: 1.2; white-space: nowrap; font-size: clamp(1.5rem, 8vw, 2.25rem); 
         }
         
         .kpi-faturamento { color: #1e293b; }
@@ -38,47 +30,29 @@
         .kpi-ticket { color: #4f46e5; }
         .kpi-sangria { color: #dc2626; }
         
-        select, input[type="date"] {
+        .filter-input, .filter-select {
             appearance: none; background-color: #ffffff; border: 1px solid #cbd5e1; 
-            padding: 0 1.25rem; border-radius: 0.75rem; font-size: 0.875rem; 
-            font-weight: 600; color: #334155; outline: none; cursor: pointer;
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); transition: all 0.2s ease;
-            width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            height: 2.75rem; box-sizing: border-box;
+            padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.875rem; 
+            font-weight: 500; color: #334155; outline: none; cursor: pointer;
+            width: 100%; transition: all 0.2s ease;
         }
-        select {
+        .filter-input:focus, .filter-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+        .filter-select {
             padding-right: 2.5rem;
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23475569' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-            background-position: right 1rem center; background-repeat: no-repeat; background-size: 1.2em 1.2em;
+            background-position: right 0.75rem center; background-repeat: no-repeat; background-size: 1em 1em;
         }
-        select:hover, input[type="date"]:hover { border-color: #94a3b8; }
-        select:focus, input[type="date"]:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
-        
-        input[type="date"] { padding-right: 2.5rem; position: relative; }
-        input[type="date"]::-webkit-calendar-picker-indicator { 
-            cursor: pointer; opacity: 0.5; transition: 0.2s; position: absolute; right: 0.75rem; width: 1.25rem; height: 1.25rem;
-        }
-        input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
-        
-        .clear-date {
-            position: absolute; right: 2.25rem; top: 50%; transform: translateY(-50%);
-            color: #94a3b8; cursor: pointer; display: none; font-size: 1.1rem; line-height: 1;
-            width: 22px; height: 22px; text-align: center; border-radius: 50%;
-            background: #f1f5f9; z-index: 10; display: flex; align-items: center; justify-content: center;
-        }
-        .clear-date:hover { color: #ef4444; background: #fee2e2; }
 
-        .header-title { background: linear-gradient(90deg, #0f172a 0%, #334155 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header-title { background: linear-gradient(90deg, #0f172a 0%, #3b82f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
         ::-webkit-scrollbar { height: 6px; width: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
         canvas { max-height: 100%; }
 
         #loader {
-            position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 50; 
+            position: fixed; inset: 0; background: #ffffff; z-index: 50; 
             display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
         .spinner {
@@ -88,99 +62,113 @@
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="p-4 md:p-6 lg:p-8 relative">
+<body class="p-4 md:p-6 lg:p-8">
 
     <div id="loader">
         <div class="spinner mb-5"></div>
-        <h2 class="text-2xl font-bold text-slate-800 brand-font">Sincronizando Base de Dados...</h2>
-        <p class="text-slate-500 font-medium mt-1">Conectando com o Google Sheets em tempo real.</p>
+        <h2 class="text-2xl font-bold text-slate-800 brand-font">Carregando Painel Tático...</h2>
     </div>
 
     <div class="max-w-[1400px] mx-auto hidden" id="main-content">
-        <!-- Header & Filters -->
-        <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-8 gap-6">
-            <div class="w-full xl:w-auto shrink-0">
-                <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight header-title brand-font uppercase text-center xl:text-left">Blessed Ateliê - 2026</h1>
-                <p class="text-slate-500 mt-2 font-medium text-center xl:text-left">Sinais Vitais • Sincronização Automática</p>
-                <div class="mt-2 text-center xl:text-left min-h-[24px]">
-                    <span id="badge-date" class="hidden inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold tracking-wide shadow-sm"></span>
+        
+        <!-- Header -->
+        <div class="mb-6">
+            <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight header-title brand-font uppercase">Blessed Ateliê</h1>
+            <p class="text-slate-500 font-medium">Sinais Vitais & Comparativo de Desempenho</p>
+        </div>
+
+        <!-- Módulo de Filtros e Comparação -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-8 flex flex-col gap-4">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                <!-- Período Principal -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">Período Principal</label>
+                    <div class="flex items-center gap-2">
+                        <input type="date" id="data-inicio" class="filter-input" onchange="updateDashboard()">
+                        <span class="text-slate-400 font-medium text-sm">até</span>
+                        <input type="date" id="data-fim" class="filter-input" onchange="updateDashboard()">
+                    </div>
+                </div>
+
+                <!-- Período Comparativo -->
+                <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100/50 transition-all" id="cmp-wrapper">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-xs font-bold text-blue-700 uppercase tracking-wider block">Comparar com Período</label>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="toggle-cmp" class="sr-only peer" onchange="toggleCmp()">
+                            <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+                    <div class="flex items-center gap-2 opacity-40 pointer-events-none transition-all" id="cmp-box">
+                        <input type="date" id="cmp-inicio" class="filter-input bg-white" onchange="updateDashboard()">
+                        <span class="text-slate-400 font-medium text-sm">até</span>
+                        <input type="date" id="cmp-fim" class="filter-input bg-white" onchange="updateDashboard()">
+                    </div>
                 </div>
             </div>
-            
-            <div class="flex flex-col gap-4 w-full flex-grow xl:max-w-5xl">
-                <!-- Filtros Padronizados em Grid Fluido -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 w-full">
-                    <div class="relative w-full">
-                        <input type="date" id="filter-data-inicio" onchange="updateDashboard()" title="Data Inicial">
-                        <span class="clear-date" id="clear-date-btn-inicio" onclick="clearDate('inicio')" title="Limpar Data Inicial">&times;</span>
-                    </div>
-                    <div class="relative w-full">
-                        <input type="date" id="filter-data-fim" onchange="updateDashboard()" title="Data Final">
-                        <span class="clear-date" id="clear-date-btn-fim" onclick="clearDate('fim')" title="Limpar Data Final">&times;</span>
-                    </div>
-                    <select id="filter-atelie" onchange="updateDashboard()"><option value="ALL">Todos os Ateliês</option></select>
-                    <select id="filter-vendedora" onchange="updateDashboard()"><option value="ALL">Todas as Vendedoras</option></select>
-                    <select id="filter-modalidade" onchange="updateDashboard()"><option value="ALL">Todas as Modalidades</option></select>
-                </div>
-                <div id="month-filters" class="flex flex-row overflow-x-auto gap-2 pb-2 xl:justify-end xl:pb-0 scroll-smooth w-full"></div>
+
+            <hr class="border-slate-100 my-1">
+
+            <!-- Filtros Secundários -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <select id="filter-atelie" onchange="updateDashboard()" class="filter-select"><option value="ALL">Todos os Ateliês</option></select>
+                <select id="filter-vendedora" onchange="updateDashboard()" class="filter-select"><option value="ALL">Todas as Vendedoras</option></select>
+                <select id="filter-modalidade" onchange="updateDashboard()" class="filter-select"><option value="ALL">Todas as Modalidades</option></select>
             </div>
         </div>
 
         <!-- KPI Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6 mb-8">
             <div class="card border-t-4 border-t-blue-600">
-                <div class="kpi-title">Faturamento Total</div>
+                <div class="kpi-title">Faturamento <span id="var-faturamento"></span></div>
                 <div class="kpi-value kpi-faturamento" id="kpi-faturamento">R$ 0,00</div>
             </div>
             <div class="card border-t-4 border-t-emerald-500">
-                <div class="kpi-title">Vendas Fechadas</div>
+                <div class="kpi-title">Vendas Fechadas <span id="var-vendas"></span></div>
                 <div class="kpi-value kpi-vendas" id="kpi-qtd">0</div>
             </div>
             <div class="card border-t-4 border-t-indigo-600">
-                <div class="kpi-title">Ticket Médio</div>
+                <div class="kpi-title">Ticket Médio <span id="var-ticket"></span></div>
                 <div class="kpi-value kpi-ticket" id="kpi-ticket">R$ 0,00</div>
             </div>
             <div class="card border-t-4 border-t-red-600">
-                <div class="kpi-title">Sangria (Devoluções)</div>
+                <div class="kpi-title">Sangria (Devoluções) <span id="var-devolucoes"></span></div>
                 <div class="kpi-value kpi-sangria" id="kpi-devolucoes">R$ 0,00</div>
             </div>
         </div>
 
         <!-- Charts Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 mb-8">
+            
+            <!-- Linha do Tempo (Apenas Período Principal para manter legibilidade) -->
             <div class="card col-span-1 lg:col-span-2">
-                <h3 class="text-lg md:text-xl font-bold mb-4 text-slate-800">Evolução do Faturamento</h3>
+                <h3 class="text-lg font-bold mb-4 text-slate-800">Evolução do Faturamento (Período Principal)</h3>
                 <div class="relative w-full h-[300px] md:h-[350px]"><canvas id="chart-linha-tempo"></canvas></div>
             </div>
             
             <div class="card">
-                <h3 class="text-lg md:text-xl font-bold mb-4 text-slate-800">Faturamento por Ateliê</h3>
+                <h3 class="text-lg font-bold mb-4 text-slate-800">Faturamento por Ateliê</h3>
                 <div class="relative w-full h-[250px] md:h-[300px]"><canvas id="chart-vendas-atelie"></canvas></div>
             </div>
             
             <div class="card">
-                <h3 class="text-lg md:text-xl font-bold mb-4 text-slate-800">Impacto das Devoluções</h3>
-                <div class="relative w-full h-[250px] md:h-[300px]"><canvas id="chart-devolucoes-mes"></canvas></div>
+                <h3 class="text-lg font-bold mb-4 text-slate-800">Tropa de Choque (Vendas por Vendedora)</h3>
+                <div class="relative w-full h-[250px] md:h-[300px]"><canvas id="chart-vendas-vendedora"></canvas></div>
             </div>
             
             <div class="card col-span-1 lg:col-span-2">
-                <h3 class="text-lg md:text-xl font-bold mb-4 text-slate-800">Desempenho: Tropa de Choque (Vendedoras)</h3>
-                <div class="relative w-full h-[350px] md:h-[450px]"><canvas id="chart-vendas-vendedora"></canvas></div>
-            </div>
-
-            <!-- Novo Gráfico de Ranking de Devoluções -->
-            <div class="card col-span-1 lg:col-span-2">
-                <h3 class="text-lg md:text-xl font-bold mb-4 text-slate-800">Sangria: Ranking de Devoluções por Vendedora</h3>
-                <div class="relative w-full h-[350px] md:h-[450px]"><canvas id="chart-devolucoes-vendedora"></canvas></div>
+                <h3 class="text-lg font-bold mb-4 text-slate-800">Sangria: Ranking de Devoluções por Vendedora</h3>
+                <div class="relative w-full h-[300px] md:h-[350px]"><canvas id="chart-devolucoes-vendedora"></canvas></div>
             </div>
             
             <div class="card">
-                <h3 class="text-lg md:text-xl font-bold mb-4 text-slate-800">Estilo x Vendedora (Top 10 Vendas)</h3>
+                <h3 class="text-lg font-bold mb-4 text-slate-800">Estilo x Vendedora (Top 10)</h3>
                 <div class="relative w-full h-[300px] md:h-[350px]"><canvas id="chart-estilo-vendedora"></canvas></div>
             </div>
             
             <div class="card">
-                <h3 class="text-lg md:text-xl font-bold mb-4 text-slate-800">Modalidade x Vendedora (Top 10 Vendas)</h3>
+                <h3 class="text-lg font-bold mb-4 text-slate-800">Modalidade x Vendedora (Top 10)</h3>
                 <div class="relative w-full h-[300px] md:h-[350px]"><canvas id="chart-modalidade-vendedora"></canvas></div>
             </div>
         </div>
@@ -190,31 +178,22 @@
         // =========================================================================
         // ATENÇÃO PEDRO: COLE O LINK CSV DO SEU GOOGLE SHEETS AQUI ABAIXO!
         // =========================================================================
-        const LINK_DO_GOOGLE_SHEETS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQOtWDCRlKs3e13M4aY04_OT2EhqGwDmR0iFjfp5jj86oSXL_PSbIoGnobWE31RAcZZDPKpbWTQUUxE/pub?gid=1392739354&single=true&output=csv"; 
+        const LINK_DO_GOOGLE_SHEETS = "COLE_SEU_LINK_AQUI"; 
         
         let rawData = [];
         let charts = {};
         const formatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
-        let selectedMonths = new Set();
 
         window.onload = () => {
             if(LINK_DO_GOOGLE_SHEETS === "COLE_SEU_LINK_AQUI") {
-                alert("Alerta de Estrategista: Você esqueceu de colar o link do Google Sheets no código-fonte! Abra o arquivo e substitua o texto 'COLE_SEU_LINK_AQUI' pelo link CSV.");
-                document.getElementById('loader').innerHTML = '<div class="text-center"><h2 class="text-red-600 font-bold text-2xl mb-2">Ação Requerida</h2><p class="text-slate-600">Edite o arquivo e insira o link do Google Sheets no local indicado.</p></div>';
+                alert("Você precisa colar o link CSV do Google Sheets no código-fonte primeiro!");
                 return;
             }
 
             Papa.parse(LINK_DO_GOOGLE_SHEETS, {
-                download: true,
-                header: true,
-                skipEmptyLines: true,
-                complete: function(results) {
-                    processData(results.data);
-                },
-                error: function(err) {
-                    alert("Erro ao buscar a planilha: " + err);
-                    document.getElementById('loader').innerHTML = '<h2 class="text-red-600 font-bold text-xl">Falha na Sincronização</h2>';
-                }
+                download: true, header: true, skipEmptyLines: true,
+                complete: function(results) { processData(results.data); },
+                error: function(err) { alert("Erro de sincronização: " + err); }
             });
         };
 
@@ -222,57 +201,35 @@
             const parseNumber = (val) => {
                 if(!val) return 0;
                 if(typeof val === 'number') return val;
-                let s = String(val).replace('R$', '').trim();
-                s = s.replace(/\./g, '').replace(',', '.');
+                let s = String(val).replace('R$', '').trim().replace(/\./g, '').replace(',', '.');
                 return parseFloat(s) || 0;
             };
             
             const parseDate = (val) => {
                 if(!val) return '';
                 if(val.includes('/')) {
-                    const parts = val.split('/');
-                    if(parts.length === 3) {
-                        let y = parts[2];
-                        let m = parts[1].padStart(2, '0');
-                        let d = parts[0].padStart(2, '0');
-                        if(y.length === 2) y = '20' + y;
-                        return `${y}-${m}-${d}`;
-                    }
-                } else if(val.includes('-')) {
-                    return val.substring(0, 10);
+                    const p = val.split('/');
+                    if(p.length === 3) return `${p[2].length === 2 ? '20'+p[2] : p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
                 }
-                return val;
+                return val.substring(0, 10);
             };
 
             rawData = sheetData.map(row => {
-                const getCol = (name) => {
-                    for(let key in row) {
-                        if(key.trim().toUpperCase() === name.toUpperCase()) return row[key];
-                    }
-                    return "";
-                };
-
-                const dataFormatada = parseDate(getCol('DATA'));
-                let vendedora = getCol('VENDEDORA') || "";
+                const getCol = (name) => Object.keys(row).find(k => k.trim().toUpperCase() === name.toUpperCase());
+                let vendedora = row[getCol('VENDEDORA')] || "";
                 if(vendedora.toUpperCase() === 'EDUARDA SOARES') vendedora = 'Eduarda Freitas';
 
+                const dataFormatada = parseDate(row[getCol('DATA')]);
                 return {
                     "DATA": dataFormatada,
-                    "ATELIÊ": getCol('ATELIÊ'),
+                    "ATELIÊ": row[getCol('ATELIÊ')] || '',
                     "VENDEDORA": vendedora,
-                    "ESTILO": getCol('ESTILO'),
-                    "MODALIDADE": getCol('MODALIDADE'),
-                    "CONDIÇÃO": getCol('CONDIÇÃO'),
-                    "TICKET DA VENDA": parseNumber(getCol('TICKET DA VENDA')),
-                    "DESCONTO (R$)": parseNumber(getCol('DESCONTO (R$)') || getCol('DESCONTO')),
-                    "VALOR FINAL": parseNumber(getCol('VALOR FINAL')),
-                    "P.A": parseNumber(getCol('P.A')),
-                    "FORMA DE PG": getCol('FORMA DE PG'),
+                    "ESTILO": row[getCol('ESTILO')] || '',
+                    "MODALIDADE": row[getCol('MODALIDADE')] || '',
+                    "VALOR FINAL": parseNumber(row[getCol('VALOR FINAL')]),
                     "MÊS_RAW": dataFormatada ? dataFormatada.substring(0, 7) : ""
                 };
             }).filter(d => d['DATA'] && d['DATA'] !== "");
-            
-            rawData.sort((a, b) => new Date(b['DATA']) - new Date(a['DATA']));
 
             document.getElementById('loader').style.display = 'none';
             document.getElementById('main-content').classList.remove('hidden');
@@ -281,247 +238,199 @@
             updateDashboard();
         }
 
-        function formatMonthName(yyyy_mm) {
-            const [year, month] = yyyy_mm.split('-');
-            const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-            return `${months[parseInt(month, 10) - 1]}/${year.substring(2)}`;
-        }
-        
-        function formatBrDate(yyyy_mm_dd) {
-            if(!yyyy_mm_dd) return '';
-            const [y, m, d] = yyyy_mm_dd.split('-');
-            return `${d}/${m}/${y}`;
-        }
-
-        function clearDate(type) {
-            if (type === 'inicio' || type === 'all') document.getElementById('filter-data-inicio').value = '';
-            if (type === 'fim' || type === 'all') document.getElementById('filter-data-fim').value = '';
-            updateDashboard();
-        }
-
         function initFilters() {
             const populate = (id, key) => {
                 const select = document.getElementById(id);
-                const vals = [...new Set(rawData.map(d => d[key]))].filter(Boolean).sort();
-                vals.forEach(v => select.add(new Option(v, v)));
+                [...new Set(rawData.map(d => d[key]))].filter(Boolean).sort().forEach(v => select.add(new Option(v, v)));
             };
             populate('filter-atelie', 'ATELIÊ');
             populate('filter-vendedora', 'VENDEDORA');
             populate('filter-modalidade', 'MODALIDADE');
+        }
 
-            const monthContainer = document.getElementById('month-filters');
-            const mesesRaw = [...new Set(rawData.map(d => d['MÊS_RAW']))].filter(Boolean).sort();
-            
-            mesesRaw.forEach(m => {
-                const btn = document.createElement('button');
-                btn.className = 'flex-shrink-0 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm cursor-pointer border bg-white border-slate-200 text-slate-600 hover:shadow hover:border-blue-300 active:scale-95';
-                btn.innerText = formatMonthName(m);
-                btn.onclick = () => {
-                    if (selectedMonths.has(m)) {
-                        selectedMonths.delete(m);
-                        btn.className = 'flex-shrink-0 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm cursor-pointer border bg-white border-slate-200 text-slate-600 hover:shadow hover:border-blue-300 active:scale-95';
-                    } else {
-                        selectedMonths.add(m);
-                        btn.className = 'flex-shrink-0 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shadow-md cursor-pointer border border-transparent bg-gradient-to-r from-blue-600 to-indigo-600 text-white transform hover:scale-[1.02] active:scale-95';
-                    }
-                    updateDashboard();
-                };
-                monthContainer.appendChild(btn);
+        function toggleCmp() {
+            const isChecked = document.getElementById('toggle-cmp').checked;
+            const box = document.getElementById('cmp-box');
+            const wrapper = document.getElementById('cmp-wrapper');
+            if(isChecked) {
+                box.classList.remove('opacity-40', 'pointer-events-none');
+                wrapper.classList.add('bg-blue-100/50', 'border-blue-200');
+            } else {
+                box.classList.add('opacity-40', 'pointer-events-none');
+                wrapper.classList.remove('bg-blue-100/50', 'border-blue-200');
+            }
+            updateDashboard();
+        }
+
+        function filterDataset(inicioId, fimId) {
+            const dInicio = document.getElementById(inicioId).value;
+            const dFim = document.getElementById(fimId).value;
+            const atelie = document.getElementById('filter-atelie').value;
+            const vend = document.getElementById('filter-vendedora').value;
+            const mod = document.getElementById('filter-modalidade').value;
+
+            return rawData.filter(d => {
+                if (dInicio && d['DATA'] < dInicio) return false;
+                if (dFim && d['DATA'] > dFim) return false;
+                if (atelie !== 'ALL' && d['ATELIÊ'] !== atelie) return false;
+                if (vend !== 'ALL' && d['VENDEDORA'] !== vend) return false;
+                if (mod !== 'ALL' && d['MODALIDADE'] !== mod) return false;
+                return true;
             });
         }
 
-        function getFilteredData() {
-            const dataInicio = document.getElementById('filter-data-inicio').value;
-            const dataFim = document.getElementById('filter-data-fim').value;
-            const atelie = document.getElementById('filter-atelie').value;
-            const vendedora = document.getElementById('filter-vendedora').value;
-            const modalidade = document.getElementById('filter-modalidade').value;
-            
-            const clearBtnInicio = document.getElementById('clear-date-btn-inicio');
-            const clearBtnFim = document.getElementById('clear-date-btn-fim');
-            const dateBadge = document.getElementById('badge-date');
-            
-            clearBtnInicio.style.display = dataInicio ? 'flex' : 'none';
-            clearBtnFim.style.display = dataFim ? 'flex' : 'none';
-            
-            if(dataInicio || dataFim) {
-                dateBadge.classList.remove('hidden');
-                let txt = 'PERÍODO: ';
-                if(dataInicio && dataFim) txt += `${formatBrDate(dataInicio)} ATÉ ${formatBrDate(dataFim)}`;
-                else if(dataInicio) txt += `A PARTIR DE ${formatBrDate(dataInicio)}`;
-                else txt += `ATÉ ${formatBrDate(dataFim)}`;
-                dateBadge.innerText = txt;
-            } else {
-                dateBadge.classList.add('hidden');
-            }
+        function calcMetrics(arr) {
+            const sales = arr.filter(d => !d['MODALIDADE'].toUpperCase().includes('DEVOLU'));
+            const returns = arr.filter(d => d['MODALIDADE'].toUpperCase().includes('DEVOLU'));
+            const fat = sales.reduce((s, d) => s + d['VALOR FINAL'], 0);
+            const dev = returns.reduce((s, d) => s + d['VALOR FINAL'], 0);
+            const qtd = sales.length;
+            return { fat, dev, qtd, tk: qtd > 0 ? fat/qtd : 0, sales, returns };
+        }
 
-            return rawData.filter(d => {
-                let dateValid = true;
-                if (dataInicio && d['DATA'] < dataInicio) dateValid = false;
-                if (dataFim && d['DATA'] > dataFim) dateValid = false;
-
-                return dateValid &&
-                    (atelie === 'ALL' || d['ATELIÊ'] === atelie) &&
-                    (vendedora === 'ALL' || d['VENDEDORA'] === vendedora) &&
-                    (modalidade === 'ALL' || d['MODALIDADE'] === modalidade) &&
-                    (selectedMonths.size === 0 || selectedMonths.has(d['MÊS_RAW']));
-            });
+        function renderVariation(curr, prev, elId, isInverse = false) {
+            const el = document.getElementById(elId);
+            if(!document.getElementById('toggle-cmp').checked || !prev || prev === 0) { el.innerHTML = ''; return; }
+            
+            const pct = ((curr - prev) / prev) * 100;
+            const isPos = pct > 0;
+            const isGood = isInverse ? !isPos : isPos;
+            const color = isGood ? 'text-emerald-600 bg-emerald-100' : 'text-red-600 bg-red-100';
+            const icon = isPos ? '▲' : '▼';
+            
+            el.innerHTML = `<span class="px-2 py-0.5 rounded-full flex items-center gap-1 text-[11px] font-bold ${color} border border-white shadow-sm">${icon} ${Math.abs(pct).toFixed(1)}%</span>`;
         }
 
         function destroyChart(id) { if (charts[id]) charts[id].destroy(); }
-
         Chart.defaults.font.family = "'Inter', sans-serif";
-        Chart.defaults.color = '#64748b';
-        Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(15, 23, 42, 0.9)';
-        Chart.defaults.plugins.tooltip.titleFont = { size: 13, family: "'Inter', sans-serif", weight: 'bold' };
-        Chart.defaults.plugins.tooltip.bodyFont = { size: 13, family: "'Inter', sans-serif" };
-        Chart.defaults.plugins.tooltip.padding = 10;
-        Chart.defaults.plugins.tooltip.cornerRadius = 8;
-        
-        const gridOptions = { color: '#f1f5f9', tickColor: 'transparent' };
 
         function updateDashboard() {
-            const data = getFilteredData();
-            const salesData = data.filter(d => !d['MODALIDADE'].toUpperCase().includes('DEVOLU'));
-            const returnData = data.filter(d => d['MODALIDADE'].toUpperCase().includes('DEVOLU'));
-
-            const faturamento = salesData.reduce((acc, curr) => acc + curr['VALOR FINAL'], 0);
-            const qtdVendas = salesData.length;
-            const ticketMedio = qtdVendas > 0 ? faturamento / qtdVendas : 0;
-            const totalDevolucoes = returnData.reduce((acc, curr) => acc + curr['VALOR FINAL'], 0);
-
-            document.getElementById('kpi-faturamento').innerText = formatter.format(faturamento);
-            document.getElementById('kpi-faturamento').title = formatter.format(faturamento);
+            const dataMain = filterDataset('data-inicio', 'data-fim');
+            const metricsMain = calcMetrics(dataMain);
             
-            document.getElementById('kpi-qtd').innerText = qtdVendas.toLocaleString('pt-BR');
-            document.getElementById('kpi-qtd').title = qtdVendas.toLocaleString('pt-BR');
+            const isCmp = document.getElementById('toggle-cmp').checked;
+            let metricsCmp = null;
+            let dataCmp = [];
             
-            document.getElementById('kpi-ticket').innerText = formatter.format(ticketMedio);
-            document.getElementById('kpi-ticket').title = formatter.format(ticketMedio);
+            if (isCmp) {
+                dataCmp = filterDataset('cmp-inicio', 'cmp-fim');
+                metricsCmp = calcMetrics(dataCmp);
+            }
+
+            // Atualiza KPIs Principais
+            document.getElementById('kpi-faturamento').innerText = formatter.format(metricsMain.fat);
+            document.getElementById('kpi-qtd').innerText = metricsMain.qtd.toLocaleString('pt-BR');
+            document.getElementById('kpi-ticket').innerText = formatter.format(metricsMain.tk);
+            document.getElementById('kpi-devolucoes').innerText = formatter.format(metricsMain.dev);
+
+            // Atualiza Variações
+            if (isCmp) {
+                renderVariation(metricsMain.fat, metricsCmp.fat, 'var-faturamento');
+                renderVariation(metricsMain.qtd, metricsCmp.qtd, 'var-vendas');
+                renderVariation(metricsMain.tk, metricsCmp.tk, 'var-ticket');
+                renderVariation(metricsMain.dev, metricsCmp.dev, 'var-devolucoes', true); // true = devolução subir é ruim
+            } else {
+                ['var-faturamento', 'var-vendas', 'var-ticket', 'var-devolucoes'].forEach(id => document.getElementById(id).innerHTML = '');
+            }
+
+            // --- GRÁFICOS ---
+            const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            const formatMonth = yyyy_mm => `${months[parseInt(yyyy_mm.split('-')[1])-1]}/${yyyy_mm.substring(2,4)}`;
+            const gridConfig = { color: '#f1f5f9' };
+
+            // 1. Linha do Tempo (Apenas Período Principal)
+            const mesesRaw = [...new Set(dataMain.map(d => d['MÊS_RAW']))].sort();
+            const atelies = [...new Set(dataMain.map(d => d['ATELIÊ']))];
+            const atelieColors = { VM: '#3b82f6', SG: '#10b981' };
             
-            document.getElementById('kpi-devolucoes').innerText = formatter.format(totalDevolucoes);
-            document.getElementById('kpi-devolucoes').title = formatter.format(totalDevolucoes);
-
-            const colors = { VM: '#2563eb', SG: '#10b981' };
-            const mesesRaw = [...new Set(data.map(d => d['MÊS_RAW']))].sort();
-            const ateliesSet = [...new Set(data.map(d => d['ATELIÊ']))];
-
-            // 1. Linha do Tempo
             destroyChart('chart-linha-tempo');
             charts['chart-linha-tempo'] = new Chart(document.getElementById('chart-linha-tempo'), {
                 type: 'line',
                 data: {
-                    labels: mesesRaw.map(formatMonthName),
-                    datasets: ateliesSet.map(at => ({
+                    labels: mesesRaw.map(formatMonth),
+                    datasets: atelies.map(at => ({
                         label: at,
-                        data: mesesRaw.map(m => salesData.filter(d => d['ATELIÊ'] === at && d['MÊS_RAW'] === m).reduce((s, d) => s + d['VALOR FINAL'], 0)),
-                        borderColor: colors[at] || '#6366f1', 
-                        backgroundColor: (colors[at] || '#6366f1') + '33', 
-                        tension: 0.4, borderWidth: 3, pointRadius: 4, pointHoverRadius: 6, fill: true
+                        data: mesesRaw.map(m => metricsMain.sales.filter(d => d['ATELIÊ'] === at && d['MÊS_RAW'] === m).reduce((s, d) => s + d['VALOR FINAL'], 0)),
+                        borderColor: atelieColors[at] || '#6366f1', backgroundColor: (atelieColors[at] || '#6366f1')+'22', 
+                        tension: 0.3, borderWidth: 3, fill: true, pointRadius: 4
                     }))
                 },
-                options: { 
-                    responsive: true, maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: true, grid: gridOptions, ticks: { callback: v => formatter.format(v) } }, x: { grid: { display: false } } },
-                    plugins: { tooltip: { callbacks: { label: c => c.dataset.label + ': ' + formatter.format(c.parsed.y) } } }
-                }
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: gridConfig } } }
             });
 
-            // 2. Vendas por Ateliê
-            const atelieSalesObj = {};
-            salesData.forEach(d => atelieSalesObj[d['ATELIÊ']] = (atelieSalesObj[d['ATELIÊ']] || 0) + d['VALOR FINAL']);
+            // 2. Faturamento por Ateliê (Comparativo se ativo)
+            const calcAtelieSum = (salesArr) => {
+                const res = {};
+                salesArr.forEach(d => res[d['ATELIÊ']] = (res[d['ATELIÊ']] || 0) + d['VALOR FINAL']);
+                return res;
+            };
+            const sumMainAtelie = calcAtelieSum(metricsMain.sales);
+            const dsAtelie = [{ label: 'Período Principal', data: Object.keys(sumMainAtelie).map(k => sumMainAtelie[k]), backgroundColor: '#3b82f6', borderRadius: 6 }];
+            if (isCmp) {
+                const sumCmpAtelie = calcAtelieSum(metricsCmp.sales);
+                dsAtelie.push({ label: 'Período Comparativo', data: Object.keys(sumMainAtelie).map(k => sumCmpAtelie[k] || 0), backgroundColor: '#94a3b8', borderRadius: 6 });
+            }
             destroyChart('chart-vendas-atelie');
             charts['chart-vendas-atelie'] = new Chart(document.getElementById('chart-vendas-atelie'), {
-                type: 'bar',
-                data: { labels: Object.keys(atelieSalesObj), datasets: [{ data: Object.values(atelieSalesObj), backgroundColor: Object.keys(atelieSalesObj).map(at => colors[at] || '#6366f1'), borderRadius: 6 }] },
-                options: { 
-                    responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => formatter.format(c.parsed.y) } } },
-                    scales: { y: { beginAtZero: true, grid: gridOptions, ticks: { callback: v => formatter.format(v) } }, x: { grid: { display: false } } }
-                }
+                type: 'bar', data: { labels: Object.keys(sumMainAtelie), datasets: dsAtelie },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: gridConfig } } }
             });
 
-            // 3. Devoluções
-            destroyChart('chart-devolucoes-mes');
-            charts['chart-devolucoes-mes'] = new Chart(document.getElementById('chart-devolucoes-mes'), {
-                type: 'bar',
-                data: {
-                    labels: mesesRaw.map(formatMonthName),
-                    datasets: ateliesSet.map(at => ({
-                        label: at,
-                        data: mesesRaw.map(m => returnData.filter(d => d['ATELIÊ'] === at && d['MÊS_RAW'] === m).reduce((s, d) => s + d['VALOR FINAL'], 0)),
-                        backgroundColor: at === 'VM' ? '#ef4444' : '#f97316', borderRadius: 6
-                    }))
-                },
-                options: { 
-                    responsive: true, maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: true, grid: gridOptions, ticks: { callback: v => formatter.format(v) } }, x: { grid: { display: false } } },
-                    plugins: { tooltip: { callbacks: { label: c => c.dataset.label + ': ' + formatter.format(c.parsed.y) } } }
-                }
-            });
-
-            // 4. Vendas por Vendedora
-            const vendSalesObj = {};
-            salesData.forEach(d => { if(d['VENDEDORA']) vendSalesObj[d['VENDEDORA']] = (vendSalesObj[d['VENDEDORA']] || 0) + d['VALOR FINAL']; });
-            const sortedVend = Object.entries(vendSalesObj).sort((a,b) => b[1] - a[1]).slice(0, 15);
+            // 3. Vendas por Vendedora (Top 10)
+            const calcVendSum = (salesArr) => {
+                const res = {};
+                salesArr.forEach(d => { if(d['VENDEDORA']) res[d['VENDEDORA']] = (res[d['VENDEDORA']] || 0) + d['VALOR FINAL']; });
+                return res;
+            };
+            const sumMainVend = calcVendSum(metricsMain.sales);
+            const topVend = Object.entries(sumMainVend).sort((a,b) => b[1] - a[1]).slice(0, 10).map(x => x[0]);
+            
+            const dsVend = [{ label: 'Período Principal', data: topVend.map(v => sumMainVend[v]), backgroundColor: '#10b981', borderRadius: 4 }];
+            if (isCmp) {
+                const sumCmpVend = calcVendSum(metricsCmp.sales);
+                dsVend.push({ label: 'Período Comparativo', data: topVend.map(v => sumCmpVend[v] || 0), backgroundColor: '#cbd5e1', borderRadius: 4 });
+            }
             destroyChart('chart-vendas-vendedora');
             charts['chart-vendas-vendedora'] = new Chart(document.getElementById('chart-vendas-vendedora'), {
-                type: 'bar',
-                data: { labels: sortedVend.map(v => v[0]), datasets: [{ data: sortedVend.map(v => v[1]), backgroundColor: '#4f46e5', borderRadius: 4 }] },
-                options: { 
-                    indexAxis: 'y', responsive: true, maintainAspectRatio: false, 
-                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => formatter.format(c.parsed.x) } } },
-                    scales: { x: { beginAtZero: true, grid: gridOptions, ticks: { callback: v => formatter.format(v) } }, y: { grid: { display: false } } }
-                }
+                type: 'bar', data: { labels: topVend, datasets: dsVend },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { grid: gridConfig }, y: { grid: { display: false } } } }
             });
 
-            // 5. Ranking de Devoluções por Vendedora (Sangria)
-            const vendDevolucoesObj = {};
-            returnData.forEach(d => { if(d['VENDEDORA']) vendDevolucoesObj[d['VENDEDORA']] = (vendDevolucoesObj[d['VENDEDORA']] || 0) + d['VALOR FINAL']; });
-            const sortedVendDevolucoes = Object.entries(vendDevolucoesObj).sort((a,b) => b[1] - a[1]).slice(0, 15);
+            // 4. Sangria (Devoluções por Vendedora)
+            const sumMainDev = calcVendSum(metricsMain.returns); // reaproveita a função
+            const topDev = Object.entries(sumMainDev).sort((a,b) => b[1] - a[1]).slice(0, 10).map(x => x[0]);
+            
+            const dsDev = [{ label: 'Período Principal', data: topDev.map(v => sumMainDev[v]), backgroundColor: '#ef4444', borderRadius: 4 }];
+            if (isCmp) {
+                const sumCmpDev = calcVendSum(metricsCmp.returns);
+                dsDev.push({ label: 'Período Comparativo', data: topDev.map(v => sumCmpDev[v] || 0), backgroundColor: '#fca5a5', borderRadius: 4 });
+            }
             destroyChart('chart-devolucoes-vendedora');
             charts['chart-devolucoes-vendedora'] = new Chart(document.getElementById('chart-devolucoes-vendedora'), {
-                type: 'bar',
-                data: { 
-                    labels: sortedVendDevolucoes.map(v => v[0]), 
-                    datasets: [{ 
-                        data: sortedVendDevolucoes.map(v => v[1]), 
-                        backgroundColor: '#ef4444', 
-                        borderRadius: 4 
-                    }] 
-                },
-                options: { 
-                    indexAxis: 'y', responsive: true, maintainAspectRatio: false, 
-                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => formatter.format(c.parsed.x) } } },
-                    scales: { x: { beginAtZero: true, grid: gridOptions, ticks: { callback: v => formatter.format(v) } }, y: { grid: { display: false } } }
-                }
+                type: 'bar', data: { labels: topDev, datasets: dsDev },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { grid: gridConfig }, y: { grid: { display: false } } } }
             });
 
-            // 6 & 7. Stacked Charts (Estilo e Modalidade)
-            const top10Vend = sortedVend.slice(0, 10).map(v => v[0]);
-            const top10Data = salesData.filter(d => top10Vend.includes(d['VENDEDORA']));
-
+            // 5 e 6. Stacked Charts (Estilo e Modalidade) mantidos no Período Principal
+            const top10Data = metricsMain.sales.filter(d => topVend.includes(d['VENDEDORA']));
             const renderStacked = (id, key, bgColors) => {
                 const cats = [...new Set(top10Data.map(d => d[key]))].filter(Boolean);
                 destroyChart(id);
                 charts[id] = new Chart(document.getElementById(id), {
                     type: 'bar',
                     data: {
-                        labels: top10Vend,
+                        labels: topVend,
                         datasets: cats.map((cat, idx) => ({
                             label: cat,
-                            data: top10Vend.map(v => top10Data.filter(d => d['VENDEDORA'] === v && d[key] === cat).length),
+                            data: topVend.map(v => top10Data.filter(d => d['VENDEDORA'] === v && d[key] === cat).length),
                             backgroundColor: bgColors[idx % bgColors.length]
                         }))
                     },
-                    options: { 
-                        responsive: true, maintainAspectRatio: false, 
-                        scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, grid: gridOptions } },
-                        plugins: { tooltip: { callbacks: { label: c => c.dataset.label + ': ' + c.parsed.y + ' vendas' } } }
-                    }
+                    options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true, grid: gridConfig } } }
                 });
             };
             renderStacked('chart-estilo-vendedora', 'ESTILO', ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981']);
-            renderStacked('chart-modalidade-vendedora', 'MODALIDADE', ['#1d4ed8', '#0ea5e9', '#64748b', '#eab308']);
+            renderStacked('chart-modalidade-vendedora', 'MODALIDADE', ['#1d4ed8', '#0ea5e9', '#64748b']);
         }
     </script>
 </body>
